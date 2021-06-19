@@ -1,0 +1,24 @@
+input, textarea {
+    display: block;
+    margin-bottom: 1em;
+}
+
+.flashes {
+    padding: 0;
+}
+
+.flashes li {
+    list-style-type: none;
+    display: inline-block;
+    padding: .25em;
+}
+
+.success {
+    background-color: lightgreen;
+    border: 1px solid darkgreen;
+}
+
+.error {
+    background-color: pink;
+    border: 1px solid red;
+}
