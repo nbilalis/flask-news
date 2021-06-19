@@ -82,10 +82,13 @@ def article_list():
 
 @app.get('/articles/<int:id>')
 def article_details(id):
+    '''
+    Show details of a single article
+    '''
     cur = get_con().cursor()
     article = cur.execute(
         '''
-        SELECT "id", "title", "body"
+        SELECT "id", "title", "body", "publish_date"
         FROM "article"
         WHERE "id" = :id
         ''',
