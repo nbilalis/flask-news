@@ -111,6 +111,27 @@ def new_article():
     return render_template('articles/new.html')
 
 
+@app.get('/articles/edit/<int:id>')
+def edit_article(id):
+    '''
+    Edit article form
+    '''
+    cur = get_con().cursor()
+    article = cur.execute(
+        '''
+        SELECT "id", "title", "body", "publish_date"
+        FROM "article"
+        WHERE "id" = :id
+        ''',
+        {'id': id}
+    ).fetchone()
+
+    if article is None:
+        abort(404)
+
+    return render_template('articles/edit.html', article=article)
+
+
 @app.cli.command('create-db')
 # @click.argument('name')
 def init_db():
