@@ -132,6 +132,69 @@ def edit_article(id):
     return render_template('articles/edit.html', article=article)
 
 
+@app.post('/articles/save')
+def save_article():
+    '''
+    This view function that will save an article's data,
+    whether it's a new article on an existing one.
+    In case the article already exists, `id` will have a value.
+    '''
+
+    id = request.form.get('id')  # Will return None if `id` was not posted
+    title = request.form.get('title').strip()
+    body = request.form.get('body').strip()
+    publish_date = request.form.get('publish_date')
+
+    # This should probably be the `id` of the logged in user
+    AUTHOR_ID = 1
+
+    con = get_con()
+    cur = con.cursor()
+
+    # Insert a new article in DB
+    if id is None:
+        try:
+            # `with` won't close the connection, but it will auto commit
+            # Still need to manually rollback on errors though
+            with get_con() as con:
+                # Insert new article
+                cur.execute(
+                    '''
+                    INSERT INTO "article" ("title", "body", "publish_date", "author_id")
+                    VALUES (:title, :body, :publish_date, :author_id)
+                    ''',
+                    {'title': title, 'body': body, 'publish_date': publish_date, 'author_id': AUTHOR_ID}
+                )
+                flash('Article saved successfully!', category='success')
+                id = cur.lastrowid
+
+        except Exception as err:
+            app.logger.error(err)
+            flash('Something went wrong...', 'error')
+            return render_template('articles/new.html')
+
+        finally:
+            con.close()
+    # Edit existing article's details
+    else:
+        # Edit existing article
+        cur.execute(
+            '''
+            UPDATE "article"
+            SET "title" = :title, "body" = :body, "publish_date" = :publish_date
+            WHERE "id" = :id
+            ''',
+            {'title': title, 'body': body, 'publish_date': publish_date, 'id': id}
+        )
+        if cur.rowcount == 1:
+            con.commit()
+        else:
+            con.rollback()
+
+    flash('Article saved successfully', category='success')
+    return redirect(url_for('article_details', id=id))
+
+
 @app.cli.command('create-db')
 # @click.argument('name')
 def init_db():
