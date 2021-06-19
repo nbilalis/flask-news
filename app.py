@@ -47,16 +47,34 @@ def home():
     return res
 
 
-@app.get('/articles')
+@app.get('/articles/')
 def article_list():
+    '''
+    Show an `article` list, using pagination.
+    Page is passed as a query string param.
+    '''
+    PAGE_SIZE = 5
+
+    try:
+        page = int(request.args.get('page', 1))    # /articles/?page=2
+    except (TypeError, ValueError):  # as err:
+        page = 1
+
     cur = get_con().cursor()
     articles = cur.execute(
         '''
-        SELECT "id", "title"
+        SELECT "id", "title", "publish_date"
         FROM "article"
-        '''
+        ORDER BY "publish_date" DESC, "title"
+        LIMIT :page_size OFFSET :offset
+        ''',
+        {'page_size': PAGE_SIZE, 'offset': (page-1) * 5}
     ).fetchall()
 
+    if len(articles) == 0:
+        abort(404)
+
+    # Log fetched rows as dictionaries, for readability
     app.logger.debug([dict(a) for a in articles])
 
     return render_template('/articles/list.html', articles=articles)
