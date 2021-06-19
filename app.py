@@ -1,12 +1,14 @@
 from datetime import datetime
 from os import environ, path, listdir
-from flask import Flask, g, render_template, request, make_response, abort
+from flask import Flask, g, render_template, redirect, request, url_for, make_response, abort, flash
+
 import sqlite3
 
 from flask_debugtoolbar import DebugToolbarExtension
 
 app = Flask(__name__)
 
+# Use the following line to generate a proper key
 # python -c "import os; print(os.urandom(24).hex())"
 app.secret_key = environ.get('SECRET_KEY', '1234')
 toolbar = DebugToolbarExtension(app)
@@ -16,35 +18,60 @@ DATABASE_PATH = path.join(BASE_PATH, 'data/flask-news.db')
 
 
 def make_dicts(cursor, row):
+    '''
+    Use this as a "row factory" function in order to
+    get DB records as a list of dictionaries
+    '''
     return dict((cursor.description[idx][0], value) for idx, value in enumerate(row))
 
 
 def get_con():
+    '''
+    Call `get_con()` to get a connection for the DB.
+    It stores the connection in the `g` object,
+    so that a single connection is used for each request.
+    '''
     con = getattr(g, 'con', None)   # con = g.con
     if con is None:
         con = sqlite3.connect(DATABASE_PATH)
         con.row_factory = sqlite3.Row
+        # Alternatively
         # con.row_factory = make_dicts
         setattr(g, 'con', con)      # g.con = con
+
     return con
 
 
 @app.teardown_appcontext
-def close_connection(ctx):
-    if con := g.pop('con', None):
-        app.logger.debug(con)
+def close_connection(err):
+    '''
+    Close the connection to the DB.
+    The `teardown_appcontext` decorator with ensure
+    that this function gets called at the end of each request,
+    even when an exception is raised.
+    '''
+    """ if request.endpoint != 'static':
+        app.logger.debug('...') """
+    if (con := g.pop('con', None)) is not None:
         con.close()
 
-    return None
+    if err is not None:
+        app.logger.error(err)
 
 
 @app.get('/')
 def home():
-    # return render_template('home.html'), {'Set-Cookie': 'foo=bar'}
+    '''
+    Just render the Home Page.
+    Also, set a cookie with a timestamp,
+    if not one doesn't exist already
+    '''
     res = make_response(render_template('home.html'))
     if request.cookies.get('timestamp') is None:
         res.set_cookie('timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     return res
+    # Alternatively
+    # return render_template('home.html'), {'Set-Cookie': 'foo=bar'}
 
 
 @app.get('/articles/')
@@ -98,6 +125,7 @@ def article_details(id):
     if article is None:
         abort(404)
 
+    # Log fetched row as a dictionary, for readability
     app.logger.debug(dict(article))
 
     return render_template('articles/details.html', article=article)
@@ -198,6 +226,10 @@ def save_article():
 @app.cli.command('create-db')
 # @click.argument('name')
 def init_db():
+    '''
+    A CLI command to create the DB, running `flask create-db`,
+    by executing the scripts in the "migrations" folder
+    '''
     migrations_path = path.join(BASE_PATH, '_migrations')
     for file in listdir(migrations_path):
         file_path = path.join(migrations_path, file)
