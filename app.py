@@ -103,6 +103,14 @@ def article_details(id):
     return render_template('articles/details.html', article=article)
 
 
+@app.get('/articles/new')
+def new_article():
+    '''
+    New article form
+    '''
+    return render_template('articles/new.html')
+
+
 @app.cli.command('create-db')
 # @click.argument('name')
 def init_db():
