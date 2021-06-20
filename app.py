@@ -77,7 +77,7 @@ def home():
 @app.get('/articles/')
 def article_list():
     '''
-    Show an `article` list, using pagination.
+    Show an article list, using pagination.
     Page is passed as a query string param.
     '''
     PAGE_SIZE = 5
@@ -95,7 +95,7 @@ def article_list():
         ORDER BY "publish_date" DESC, "title"
         LIMIT :page_size OFFSET :offset
         ''',
-        {'page_size': PAGE_SIZE, 'offset': (page-1) * 5}
+        {'page_size': PAGE_SIZE, 'offset': (page-1) * PAGE_SIZE}
     ).fetchall()
 
     if len(articles) == 0:
@@ -173,7 +173,7 @@ def save_article():
     body = request.form.get('body').strip()
     publish_date = request.form.get('publish_date')
 
-    # This should probably be the `id` of the logged in user
+    # This should probably be the `id` of the logged-in user
     AUTHOR_ID = 1
 
     con = get_con()
@@ -182,8 +182,9 @@ def save_article():
     # Insert a new article in DB
     if id is None:
         try:
-            # `with` won't close the connection, but it will auto commit
-            # Still need to manually rollback on errors though
+            # Context manager usage (`with`) won't close the connection,
+            # but it will auto-commit.
+            # Still need to manually rollback on errors though.
             with get_con() as con:
                 # Insert new article
                 cur.execute(
