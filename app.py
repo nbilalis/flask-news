@@ -64,7 +64,7 @@ def home():
     '''
     Just render the Home Page.
     Also, set a cookie with a timestamp,
-    if not one doesn't exist already
+    if one doesn't exist already
     '''
     res = make_response(render_template('home.html'))
     if request.cookies.get('timestamp') is None:
