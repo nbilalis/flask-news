@@ -183,8 +183,8 @@ def save_article():
     if id is None:
         try:
             # Context manager usage (`with`) won't close the connection,
-            # but it will auto-commit.
-            # Still need to manually rollback on errors though.
+            # but it will auto-commit on success / rollback on exception.
+            # Still need to manually catch errors though.
             with get_con() as con:
                 # Insert new article
                 cur.execute(
